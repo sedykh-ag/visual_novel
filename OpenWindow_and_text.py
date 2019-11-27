@@ -1,6 +1,14 @@
 import pygame
 import math, sys, os
+import zipfile, tempfile
 from pygame.locals import *
+
+
+"""Resource manager"""
+archive = zipfile.ZipFile('resources.zip', 'r') # создает объект архива
+temp_dir = tempfile.mkdtemp() # временная директория
+archive.extract('Backgrounds/Background1.jpg', path=temp_dir)
+background_dir = str.format('{}\\Backgrounds\\Background1.jpg', temp_dir)
 
 pygame.init()
 w, h = 1340, 720
@@ -58,7 +66,7 @@ def menu(mouse):
 
 def game(mouse):
     print(mouse.get_pos())
-    ball = pygame.image.load('resources/Backgrounds/Background1.jpg')
+    ball = pygame.image.load(background_dir)
     screen.blit(ball, (0, 0))
 
 
