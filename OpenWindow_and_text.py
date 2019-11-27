@@ -1,7 +1,6 @@
 import pygame
 import math, sys, os
 from pygame.locals import *
-import GameObjects as go
 
 pygame.init()
 w, h = 1340, 720
