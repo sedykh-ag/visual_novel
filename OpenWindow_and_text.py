@@ -1,19 +1,77 @@
 import pygame
 import math, sys, os
 from pygame.locals import *
+import GameObjects as go
 
 pygame.init()
-w, h = 640, 240
-screen = pygame.display.set_mode((w, h))  #создание окна
-pygame.display.set_caption('Приключение Карасика')  #название окна
+w, h = 1340, 720
+screen = pygame.display.set_mode((w, h))  # создание окна
+pygame.display.set_caption('Приключение Карася-тян')  # название окна
 running = True
-BLUE = (0, 0, 255)
-font = pygame.font.SysFont(None, 24)       # шрифт
-img = font.render('hellowqqek', True, BLUE)  # его рендер
-screen.blit(img, (20, 20))                 # вывод на экран
-while running: # Основной цикл
-    for event in pygame.event.get():
-        if event.type == QUIT: # Без этого не будет работать кнопка закрыть
-            running = False
-    pygame.display.update()
+
+state = 'Menu'
+
+WHITE = (254, 255, 255)
+BLACK = (0, 0, 0)
+GREEN = (0, 200, 0)
+RED = (200, 0, 0)
+
+widht_button = 200
+height_button = 80
+
+font = pygame.font.SysFont(None, 30)  # шрифт
+# text = go.Text('GameFiles.zip')
+
+# ball = pygame.image.load(text.text, namehint = "")
+screen.fill(WHITE)
+
+
+def menu(mouse):
+    if w / 2 - 100 + widht_button > mouse.get_pos()[0] > w / 2 - 100 and h / 3 - 30 + height_button > mouse.get_pos()[1] > h / 3 - 30:
+        pygame.draw.rect(screen, (0, 100, 0), (w / 2 - 100,
+                                               h / 3 - 30,
+                                               widht_button,
+                                               height_button))
+        if mouse.get_pressed()[0] == 1:
+            global state
+            state = 'Game'
+
+    else:
+        pygame.draw.rect(screen, (0, 200, 0), (w / 2 - 100,
+                                               h / 3 - 30,
+                                               widht_button,
+                                               height_button))
+    if w / 2 - 100 + widht_button > mouse.get_pos()[0] > w / 2 - 100 and 2 * h / 3 - 30 + height_button > mouse.get_pos()[1] > 2 * h / 3 - 30:
+        pygame.draw.rect(screen, (0, 100, 0), (w / 2 - 100,
+                                               2 * h / 3 - 30,
+                                               widht_button,
+                                               height_button))
+    else:
+        pygame.draw.rect(screen, (0, 200, 0), (w / 2 - 100,
+                                               2 * h / 3 - 30,
+                                               widht_button,
+                                               height_button))
+    new_game_text = font.render('New Game', False, BLACK)
+    load_text = font.render('Load', False, BLACK)
+    screen.blit(new_game_text, (w / 2 - font.size('New Game')[0] / 2, h / 3))
+    screen.blit(load_text, (w / 2 - font.size('Load')[0] / 2, 2 * h / 3))
+
+
+def game(mouse):
+    print(mouse.get_pos())
+    ball = pygame.image.load('resources/Backgrounds/Background1.jpg')
+    screen.blit(ball, (0, 0))
+
+
+if __name__ == "__main__":
+    while running:  # Основной цикл
+        for event in pygame.event.get():
+            if event.type == QUIT:  # Без этого не будет работать кнопка закрыть
+                running = False
+        mouse = pygame.mouse
+        if state == 'Menu':
+            menu(mouse)
+        if state == 'Game':
+            game(mouse)
+        pygame.display.update()
 pygame.quit()
