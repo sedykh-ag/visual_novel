@@ -92,7 +92,7 @@ class slide():
         screen.blit(pygame.image.load(self.character_dir), (0, 0))
 
 
-c1 = slide('Backgrounds/Background1.jpg', 'Texts/Scene1/Text1', 'Characters/Lena/Lena_1.png')
+c1 = slide('Backgrounds/Background1.jpg', 'Texts/Scene1/Text1', 'Characters/Karasev/Karasev.jpg')
 
 if __name__ == "__main__":
     while running:  # Основной цикл
