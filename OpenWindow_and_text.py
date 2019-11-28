@@ -1,12 +1,15 @@
+import math
+import os
+import sys
+import tempfile
+import zipfile
+
 import pygame
-import math, sys, os
-import zipfile, tempfile
 from pygame.locals import *
 
-
 """Resource manager"""
-archive = zipfile.ZipFile('resources.zip', 'r') # создает объект архива
-temp_dir = tempfile.mkdtemp() # временная директория
+archive = zipfile.ZipFile('resources.zip', 'r')  # создает объект архива
+temp_dir = tempfile.mkdtemp()  # временная директория
 archive.extract('Backgrounds/Background1.jpg', path=temp_dir)
 background_dir = str.format('{}/Backgrounds/Background1.jpg', temp_dir)
 
@@ -48,7 +51,8 @@ def menu(mouse):
                                                h / 3 - 30,
                                                widht_button,
                                                height_button))
-    if w / 2 - 100 + widht_button > mouse.get_pos()[0] > w / 2 - 100 and 2 * h / 3 - 30 + height_button > mouse.get_pos()[1] > 2 * h / 3 - 30:
+    if w / 2 - 100 + widht_button > mouse.get_pos()[0] > w / 2 - 100 and 2 * h / 3 - 30 + height_button > \
+            mouse.get_pos()[1] > 2 * h / 3 - 30:
         pygame.draw.rect(screen, (0, 100, 0), (w / 2 - 100,
                                                2 * h / 3 - 30,
                                                widht_button,
