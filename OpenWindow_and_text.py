@@ -37,7 +37,8 @@ screen.fill(WHITE)
 
 
 def menu(mouse):
-    if w / 2 - 100 + widht_button > mouse.get_pos()[0] > w / 2 - 100 and h / 3 - 30 + height_button > mouse.get_pos()[1] > h / 3 - 30:
+    if w / 2 - 100 + widht_button > mouse.get_pos()[0] > w / 2 - 100 and h / 3 - 30 + height_button > mouse.get_pos()[
+        1] > h / 3 - 30:
         pygame.draw.rect(screen, (0, 100, 0), (w / 2 - 100,
                                                h / 3 - 30,
                                                widht_button,
@@ -68,11 +69,30 @@ def menu(mouse):
     screen.blit(load_text, (w / 2 - font.size('Load')[0] / 2, 2 * h / 3))
 
 
-def game(mouse):
-    print(mouse.get_pos())
-    ball = pygame.image.load(background_dir)
-    screen.blit(ball, (0, 0))
+def game(c):
+    c.draw()
 
+
+class slide():
+    def __init__(self, background_dir, text_dir, character_dir):
+        temp_dir = tempfile.mkdtemp()  # временная директория
+        archive.extract(background_dir, path=temp_dir)
+        self.background_dir = str.format('{}/' + background_dir, temp_dir)
+
+        temp_dir = tempfile.mkdtemp()  # временная директория
+        archive.extract(text_dir, path=temp_dir)
+        self.temp_dir = str.format('{}/' + text_dir, temp_dir)
+
+        temp_dir = tempfile.mkdtemp()  # временная директория
+        archive.extract(character_dir, path=temp_dir)
+        self.character_dir = str.format('{}/' + character_dir, temp_dir)
+
+    def draw(self):
+        screen.blit(pygame.image.load(self.background_dir), (0, 0))
+        screen.blit(pygame.image.load(self.character_dir), (0, 0))
+
+
+c1 = slide('Backgrounds/Background1.jpg', 'Texts/Scene1/Text1', 'Characters/Lena/Lena_1.png')
 
 if __name__ == "__main__":
     while running:  # Основной цикл
@@ -83,6 +103,6 @@ if __name__ == "__main__":
         if state == 'Menu':
             menu(mouse)
         if state == 'Game':
-            game(mouse)
+            game(c1)
         pygame.display.update()
 pygame.quit()
