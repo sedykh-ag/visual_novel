@@ -8,7 +8,7 @@ from collections import defaultdict
 import pygame
 from game_object import GameObject
 from text_object import TextObject
-from pygame.locals import *
+from pygame.rect import Rect
 
 """Declarations"""
 state = 'Menu'
@@ -18,36 +18,102 @@ WHITE = (254, 255, 255)
 BLACK = (0, 0, 0)
 GREEN = (0, 200, 0)
 RED = (200, 0, 0)
-widht_button = 200
-height_button = 80
 
-"""Resource manager"""
-archive = zipfile.ZipFile('resources.zip', 'r')  # создает объект архива
-temp_dir = tempfile.mkdtemp()  # временная директория
-archive.extract('Backgrounds/Background1.jpg', path=temp_dir)
-background_dir = str.format('{}/Backgrounds/Background1.jpg', temp_dir)
+"""GameObject"""
+class GameObject:
+    def __init__(self, x, y, w, h, speed=(0,0)):
+        self.bounds = Rect(x, y, w, h)
+        self.speed = speed
 
-"""
-pygame.init()
-screen = pygame.display.set_mode((WIDTH, HEIGHT))  # создание окна
-pygame.display.set_caption('Приключение Карася-тян')  # название окна
-running = True
+    @property
+    def left(self):
+        return self.bounds.left
 
+    @property
+    def right(self):
+        return self.bounds.right
 
-font = pygame.font.SysFont(None, 30)  # шрифт
-# text = go.Text('GameFiles.zip')
+    @property
+    def top(self):
+        return self.bounds.top
 
-# ball = pygame.image.load(text.text, namehint = "")
-screen.fill(WHITE)
-"""
+    @property
+    def bottom(self):
+        return self.bounds.bottom
+
+    @property
+    def width(self):
+        return self.bounds.width
+
+    @property
+    def height(self):
+        return self.bounds.height
+
+    @property
+    def center(self):
+        return self.bounds.center
+
+    @property
+    def centerx(self):
+        return self.bounds.centerx
+
+    @property
+    def centery(self):
+        return self.bounds.centery
+
+    def draw(self, surface):
+        pass
+
+    def move(self, dx, dy):
+        self.bounds = self.bounds.move(dx, dy)
+
+    def update(self):
+        if self.speed == [0, 0]:
+            return
+
+        self.move(*self.speed)
+
+"""TextObject"""
+class TextObject:
+    def __init__(self,
+                 x,
+                 y,
+                 text_func,
+                 color,
+                 font_name,
+                 font_size):
+        self.pos = (x, y)
+        self.text_func = text_func
+        self.color = color
+        self.font = pygame.font.SysFont(font_name, font_size)
+        self.bounds = self.get_surface(text_func())
+
+    def draw(self, surface, centralized=False):
+        text_surface, self.bounds = \
+            self.get_surface(self.text_func())
+        if centralized:
+            pos = (self.pos[0] - self.bounds.width // 2,
+                   self.pos[1])
+        else:
+            pos = self.pos
+        surface.blit(text_surface, pos)
+
+    def get_surface(self, text):
+        text_surface = self.font.render(text,
+                                        False,
+                                        self.color)
+        return text_surface, text_surface.get_rect()
+
+    def update(self):
+        pass
 
 """Main Game Class"""
 class Game:
-    def __init__(self, 
-                 caption, 
-                 width, 
-                 height, 
-                 back_image_filename, 
+    def __init__(self,
+                 caption,
+                 width,
+                 height,
+                 back_image_filename,
                  frame_rate):
         self.background_image = \
             pygame.image.load(back_image_filename)
@@ -99,61 +165,41 @@ class Game:
 
             pygame.display.update()
             self.clock.tick(self.frame_rate)
-    
-"""
-def menu(mouse):
-    if w / 2 - 100 + widht_button > mouse.get_pos()[0] > w / 2 - 100 and h / 3 - 30 + height_button > mouse.get_pos()[1] > h / 3 - 30:
-        pygame.draw.rect(screen, (0, 100, 0), (w / 2 - 100,
-                                               h / 3 - 30,
-                                               widht_button,
-                                               height_button))
-        if mouse.get_pressed()[0] == 1:
-            global state
-            state = 'Game'
 
-    else:
-        pygame.draw.rect(screen, (0, 200, 0), (w / 2 - 100,
-                                               h / 3 - 30,
-                                               widht_button,
-                                               height_button))
-    if w / 2 - 100 + widht_button > mouse.get_pos()[0] > w / 2 - 100 and 2 * h / 3 - 30 + height_button > \
-            mouse.get_pos()[1] > 2 * h / 3 - 30:
-        pygame.draw.rect(screen, (0, 100, 0), (w / 2 - 100,
-                                               2 * h / 3 - 30,
-                                               widht_button,
-                                               height_button))
-    else:
-        pygame.draw.rect(screen, (0, 200, 0), (w / 2 - 100,
-                                               2 * h / 3 - 30,
-                                               widht_button,
-                                               height_button))
-    new_game_text = font.render('New Game', False, BLACK)
-    load_text = font.render('Load', False, BLACK)
-    screen.blit(new_game_text, (w / 2 - font.size('New Game')[0] / 2, h / 3))
-    screen.blit(load_text, (w / 2 - font.size('Load')[0] / 2, 2 * h / 3))
+"""Button"""
+class Button(GameObject):
+    def __init__(self,
+                 x,
+                 y,
+                 w,
+                 h,
+                 text,
+                 on_click=lambda x: None,
+                 padding=0):
+        super().__init__(x, y, w, h)
+        self.state = 'normal'
+        self.on_click = on_click
 
-"""
-"""
-def game(mouse):
-    print(mouse.get_pos())
-    ball = pygame.image.load(background_dir)
-    screen.blit(ball, (0, 0))
-"""
+        button_text_color = BLACK
+        font_name = 'font' # REPLACE THIS !
+        font_size = 0 # REPLACE THIS !
+        self.text = TextObject(x + padding,
+                               y + padding, lambda: text,
+                               button_text_color,
+                               font_name,
+                               font_size)
 
-"""
-if __name__ == "__main__":
-    while running:  # Основной цикл
-        for event in pygame.event.get():
-            if event.type == QUIT:  # Без этого не будет работать кнопка закрыть
-                running = False
-        mouse = pygame.mouse
-        if state == 'Menu':
-            menu(mouse)
-        if state == 'Game':
-            game(mouse)
-        pygame.display.update()
-pygame.quit()
-"""
+    def draw(self, surface):
+        pygame.draw.rect(surface,
+                         self.back_color,
+                         self.bounds)
+        self.text.draw(surface)
+
+"""Resource manager"""
+archive = zipfile.ZipFile('resources.zip', 'r')  # создает объект архива
+temp_dir = tempfile.mkdtemp()  # временная директория
+archive.extract('Backgrounds/Background1.jpg', path=temp_dir)
+background_dir = str.format('{}/Backgrounds/Background1.jpg', temp_dir)
 
 """Initialization"""
 game = Game('Карась', WIDTH, HEIGHT, background_dir, FPS)
