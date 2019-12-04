@@ -3,6 +3,8 @@ import os
 import sys
 import tempfile
 import zipfile
+from random import randrange as rnd, choice
+from typing import Type
 
 import pygame
 from pygame.locals import *
@@ -31,7 +33,6 @@ height_button = 80
 
 font = pygame.font.SysFont(None, 30)  # шрифт
 # text = go.Text('GameFiles.zip')
-
 # ball = pygame.image.load(text.text, namehint = "")
 screen.fill(WHITE)
 
@@ -46,7 +47,6 @@ def menu(mouse):
         if mouse.get_pressed()[0] == 1:
             global state
             state = 'Game'
-
     else:
         pygame.draw.rect(screen, (0, 200, 0), (w / 2 - 100,
                                                h / 3 - 30,
@@ -69,12 +69,14 @@ def menu(mouse):
     screen.blit(load_text, (w / 2 - font.size('Load')[0] / 2, 2 * h / 3))
 
 
-def game(c):
-    c.draw()
+def game(s, mouseb):
+    s[0].draw()
+    s[0].next(mouseb)
 
 
-class slide():
-    def __init__(self, background_dir, text_dir, character_dir):
+class Slide():
+    def __init__(self, background_dir, text_dir, character_dir,
+                 next_slides):  # фон,текст,герои, массив возможных следующих слайдов
         temp_dir = tempfile.mkdtemp()  # временная директория
         archive.extract(background_dir, path=temp_dir)
         self.background_dir = str.format('{}/' + background_dir, temp_dir)
@@ -87,12 +89,42 @@ class slide():
         archive.extract(character_dir, path=temp_dir)
         self.character_dir = str.format('{}/' + character_dir, temp_dir)
 
+        self.next_slides = next_slides
+        self.a = 0  # параметр, определяющий, куда идти дальше
+        self.x = self.y = rnd(100, 200)
+
     def draw(self):
         screen.blit(pygame.image.load(self.background_dir), (0, 0))
         screen.blit(pygame.image.load(self.character_dir), (0, 0))
 
+    def button(self, widht, height, mouse,x,y):  # кнопка ебать
+        if w / 2 - x + widht > mouse.get_pos()[0] > w / 2 - x and h / 3 - y + height > mouse.get_pos()[
+            1] > h / 3 - y:
+            pygame.draw.rect(screen, (0, 50, 70), (w / 2 - x,
+                                                   h / 3 - y,
+                                                   widht,
+                                                   height))
 
-c1 = slide('Backgrounds/Background1.jpg', 'Texts/Scene1/Text1', 'Characters/Karasev/Karasev.jpg')
+            if mouse.get_pressed()[0] == 1:
+                self.a = 1  # пока самый простой случай - если нажат, то открывай след слайд
+        else:
+            pygame.draw.rect(screen, (0, 0, 0), (w / 2 - x,
+                                                 h / 3 - y,
+                                                 widht,
+                                                 height))
+
+    def next(self, mouse):  # функция, которая делает кнопку и рисует след. слайд. (не работает как надо)
+        self.button(200, 100 , mouse, self.x, self.y)
+        if self.a == 1:
+            slides[self.next_slides[0]].draw()
+            #slides[self.next_slides[0]].next(mouse)  # откоменчивание этой строки ведет к бесконечному циклу
+
+
+slides = [0] * 10  # массив слайдов
+slides[0] = Slide('Backgrounds/Background1.jpg', 'Texts/Scene1/Text1', 'Characters/Karasev/Karasev.jpg', [1])
+slides[1] = Slide('Backgrounds/Background2.jpg', 'Texts/Scene1/Text1', 'Characters/Lena/Lena_2.jpg', [2])
+slides[2] = Slide('Backgrounds/Background3.jpg', 'Texts/Scene1/Text1', 'Characters/Lena/Lena_2.jpg', [3])
+slides[3] = Slide('Backgrounds/Background4.jpg', 'Texts/Scene1/Text1', 'Characters/Lena/Lena_2.jpg', [0])
 
 if __name__ == "__main__":
     while running:  # Основной цикл
@@ -103,6 +135,6 @@ if __name__ == "__main__":
         if state == 'Menu':
             menu(mouse)
         if state == 'Game':
-            game(c1)
+            game(slides, mouse)
         pygame.display.update()
 pygame.quit()
