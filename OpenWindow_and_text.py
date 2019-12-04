@@ -12,9 +12,10 @@ from pygame.rect import Rect
 
 """Declarations"""
 state = 'Menu'
-FPS = 60
+FPS = 30
 WIDTH, HEIGHT = 1340, 720
-WHITE = (254, 255, 255)
+WHITE = (255, 255, 255)
+GREY = (161, 161, 161)
 BLACK = (0, 0, 0)
 GREEN = (0, 200, 0)
 RED = (200, 0, 0)
@@ -79,9 +80,9 @@ class TextObject:
                  x,
                  y,
                  text_func,
-                 color,
-                 font_name,
-                 font_size):
+                 color=BLACK,
+                 font_name='arial',
+                 font_size=40):
         self.pos = (x, y)
         self.text_func = text_func
         self.color = color
@@ -100,14 +101,70 @@ class TextObject:
 
     def get_surface(self, text):
         text_surface = self.font.render(text,
-                                        False,
+                                        False, #antialiasing
                                         self.color)
         return text_surface, text_surface.get_rect()
 
     def update(self):
         pass
 
-"""Main Game Class"""
+"""Main Menu class"""
+class Menu:
+    def __init__(self):
+        self.buttons = []
+        self.title = TextObject(600,
+                                100,
+                                lambda: "Main Menu")
+        self.new_game_button = Button(600,
+                                      300,
+                                      100,
+                                      50,
+                                      "New Game")
+        self.load_game_button = Button(600,
+                                      400,
+                                      100,
+                                      50,
+                                      "Load Game")
+        self.exit_button = Button(600,
+                                  500,
+                                  100,
+                                  50,
+                                  "Exit to desktop")
+        self.buttons.append(self.new_game_button)
+        self.buttons.append(self.load_game_button)
+        self.buttons.append(self.exit_button)
+
+    def update(self):
+        pass
+
+    def handle_events(self, type, pos):
+        for b in self.buttons:
+            b.handle_mouse_event(type, pos)
+
+    def draw(self, surface):
+        self.title.draw(surface)
+        for b in self.buttons:
+            b.draw(surface)
+
+"""State Class"""
+class State:
+    def __init__(self, surface):
+        self.surface = surface
+        self.background = None
+        self.frontground = []
+        self.text = ''
+        self.clock = pygame.time.Clock()
+        self.keydown_handlers = defaultdict(list)
+        self.keyup_handlers = defaultdict(list)
+        self.mouse_handlers = []
+
+        def draw(self):
+            pass
+
+        def handle_events(self):
+            pass
+
+"""Game Class"""
 class Game:
     def __init__(self,
                  caption,
@@ -156,9 +213,15 @@ class Game:
                     handler(event.type, event.pos)
 
     def run(self):
-        while not self.game_over:
-            self.surface.blit(self.background_image, (0, 0))
+        """Enter menu state"""
+        menu = Menu()
+        self.objects.append(menu)
+        self.mouse_handlers.append(menu.handle_events)
 
+        while not self.game_over:
+            self.surface.blit(self.background_image, (0, 0)) #background picture rendering
+
+            """End sequence"""
             self.handle_events()
             self.update()
             self.draw()
@@ -181,8 +244,8 @@ class Button(GameObject):
         self.on_click = on_click
 
         button_text_color = BLACK
-        font_name = 'font' # REPLACE THIS !
-        font_size = 0 # REPLACE THIS !
+        font_name = 'Arial' # REPLACE THIS !
+        font_size = 10 # REPLACE THIS !
         self.text = TextObject(x + padding,
                                y + padding, lambda: text,
                                button_text_color,
@@ -195,6 +258,36 @@ class Button(GameObject):
                          self.bounds)
         self.text.draw(surface)
 
+    def handle_mouse_event(self, type, pos):
+        if type == pygame.MOUSEMOTION:
+            self.handle_mouse_move(pos)
+        elif type == pygame.MOUSEBUTTONDOWN:
+            self.handle_mouse_down(pos)
+        elif type == pygame.MOUSEBUTTONUP:
+            self.handle_mouse_up(pos)
+
+    def handle_mouse_move(self, pos):
+        if self.bounds.collidepoint(pos):
+            if self.state != 'pressed':
+                self.state = 'hover'
+        else:
+            self.state = 'normal'
+
+    def handle_mouse_down(self, pos):
+        if self.bounds.collidepoint(pos):
+            self.state = 'pressed'
+
+    def handle_mouse_up(self, pos):
+        if self.state == 'pressed':
+            self.on_click(self)
+            self.state = 'hover'
+
+    @property
+    def back_color(self):
+        return dict(normal=(200, 200, 200),
+                    hover=(145, 145, 145),
+                    pressed=(128, 128, 128))[self.state]
+
 """Resource manager"""
 archive = zipfile.ZipFile('resources.zip', 'r')  # создает объект архива
 temp_dir = tempfile.mkdtemp()  # временная директория
@@ -202,5 +295,5 @@ archive.extract('Backgrounds/Background1.jpg', path=temp_dir)
 background_dir = str.format('{}/Backgrounds/Background1.jpg', temp_dir)
 
 """Initialization"""
-game = Game('Карась', WIDTH, HEIGHT, background_dir, FPS)
+game = Game('Карась', WIDTH, HEIGHT, "resources/Backgrounds/blank.png", FPS)
 game.run()
