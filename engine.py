@@ -1,0 +1,179 @@
+import math
+import os
+import sys
+import tempfile
+import zipfile
+import pygame
+from collections import defaultdict
+
+
+"""Declarations"""
+state = 'Menu'
+FPS = 60
+WIDTH, HEIGHT = 1340, 720
+WHITE = (255, 255, 255)
+GREY = (161, 161, 161)
+BLACK = (0, 0, 0)
+GREEN = (0, 200, 0)
+RED = (200, 0, 0)
+
+def blit_text(surface, max_width, max_height, text, pos, font, color=pygame.Color('black')):
+    words = [word.split(' ') for word in text.splitlines()]  # 2D array where each row is a list of words.
+    space = font.size(' ')[0]  # The width of a space.
+    max_width, max_height = max_width, max_height
+    x, y = pos
+    for line in words:
+        for word in line:
+            word_surface = font.render(word, 0, color)
+            word_width, word_height = word_surface.get_size()
+            if x + word_width >= max_width:
+                x = pos[0]  # Reset the x.
+                y += word_height  # Start on new row.
+            surface.blit(word_surface, (x, y))
+            x += word_width + space
+        x = pos[0]  # Reset the x.
+        y += word_height  # Start on new row.
+
+class Menu:
+	def __init__(self, clock, background_image, surface):
+		self.surface = surface
+		self.clock = clock
+		self.background_image = background_image
+		self.over = False
+		self.new_game_button = Button(500, 300, 100, 50, self.menu_over, 'New Game')
+		self.exit_button = Button(500, 500, 100, 50, self.exit, 'Exit')
+		self.buttons = [self.new_game_button, self.exit_button]
+
+	def handle_events(self):
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				pygame.quit()
+				sys.exit()
+			elif event.type in (pygame.MOUSEBUTTONDOWN,
+								pygame.MOUSEBUTTONUP,
+								pygame.MOUSEMOTION):
+				for b in self.buttons:
+					b.handle_mouse_event(event.type, event.pos)
+
+	def exit(self):
+		pygame.quit()
+		sys.exit()
+
+	def menu_over(self):
+		self.over = True
+
+	def run(self):
+		while not self.over:
+			self.surface.blit(self.background_image, (0, 0))
+			for b in self.buttons:
+				b.draw(self.surface)
+
+			self.handle_events()
+			pygame.display.update()
+			self.clock.tick(FPS)
+
+class State:
+	def __init__(self, next_state, text, choices, characters, background_image):
+		self.next_state = next_state
+		self.text = text
+		self.choices = choices # simple array of textes
+		self.characters = characters # dict of characters and their pos [(char1, pos1), (char2, pos2) ...]
+		self.background_image = background_image
+
+	def handle_mouse_event(self, type, pos):
+		pass
+
+class Game:
+	def __init__(self, initial_state):
+		#self.initial_state = initial_state
+		self.current_state = initial_state
+		self.frame_rate = FPS
+		pygame.mixer.pre_init(44100, 16, 2, 4096)
+		pygame.init()
+		pygame.font.init()
+		self.surface = pygame.display.set_mode((WIDTH, HEIGHT))
+		pygame.display.set_caption("Game")
+		self.clock = pygame.time.Clock()
+		self.background_menu_image = pygame.image.load("blank.png")
+
+	def handle_events(self):
+		for event in pygame.event.get():
+			if event.type == pygame.QUIT:
+				pygame.quit()
+				sys.exit()
+			elif event.type in (pygame.MOUSEBUTTONDOWN,
+                                pygame.MOUSEBUTTONUP,
+                                pygame.MOUSEMOTION):
+				self.current_state.handle_mouse_event(event.type, event.pos)
+
+	def turn_state(self):
+		self.current_state = self.current_state.next_state
+
+	def enter_main_state(self):
+		pass
+
+	def run(self):
+		menu = Menu(self.clock, self.background_menu_image, self.surface)
+		menu.run()
+
+		button_turn = Button(1150, 650, 50, 50, self.turn_state)
+		textbox_text = self.current_state.text
+		textbox_image = pygame.image.load("textbox.png")
+		textbox_font = pygame.font.SysFont('Arial', 20)
+		textbox_surface = textbox_font.render(textbox_text, False, BLACK)
+		while True:
+			self.surface.blit(self.current_state.background_image, (0, 0)) # background
+			for img, pos in self.current_state.characters: # characters
+				self.surface.blit(img, pos)
+			# there should be characters
+			self.surface.blit(textbox_image, (60, 600)) # textbox
+			self.surface.blit(textbox_surface, (60, 600))
+			button_turn.draw(self.surface) # button
+
+			self.handle_events() # for buttons and exit to work
+			pygame.display.update()
+			self.clock.tick(self.frame_rate)
+
+class Button():
+	def __init__(self, x, y, w, h, on_click, text=''):
+		self.x, self.y = x, y
+		self.w, self.h = w, h
+		self.rect = pygame.Rect(x, y, w, h)
+		self.on_click = on_click
+		self.text = text
+		self.state = 'normal' # or pressed
+		if self.text != '':
+			self.font = pygame.font.SysFont('Arial', 10)
+
+	def draw(self, surface):
+		pygame.draw.rect(surface, self.back_color, self.rect)
+		if self.text != '':
+			blit_text(surface, self.w, self.h, self.text, (self.x, self.y), self.font)
+
+	def handle_mouse_event(self, type, pos):
+		if type == pygame.MOUSEBUTTONDOWN:
+			self.handle_mouse_down(pos)
+		elif type == pygame.MOUSEBUTTONUP:
+			self.handle_mouse_up(pos)
+
+	def handle_mouse_down(self, pos):
+		if self.rect.collidepoint(pos):
+			self.state = 'pressed'
+
+	def handle_mouse_up(self, pos):
+		if self.state == 'pressed':
+			self.on_click()
+			self.state = 'hover'
+
+	@property
+	def back_color(self):
+		return dict(normal=(200, 200, 200),
+					pressed=(128, 128, 128))[self.state]
+	
+
+"""Game start testing"""
+#initial_state = State(None)
+slide2 = State(None, '', [], [pygame.image.load("Lena.png"), (100, 100)], pygame.image.load("blank.png"))
+slide1 = State(None, '', [], [(pygame.image.load("Miku.png"), (0, 0)), (pygame.image.load("Ulyana.png"), (100, 100))], pygame.image.load("blank.png"))
+game = Game(slide1)
+game.run()
