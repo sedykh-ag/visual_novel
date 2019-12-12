@@ -41,9 +41,9 @@ class Menu:
         self.background_image = background_image
         self.over = False
         self.message = None
-        self.new_game_button = Button(500, 100, 200, 100, self.menu_over, 'New Game')
-        self.load_game_button = Button(500, 300, 200, 100, self.load_game, 'Game Load')
-        self.exit_button = Button(500, 500, 200, 100, self.exit, 'Exit')
+        self.new_game_button = ButtonMenu(500, 100, 200, 100, self.menu_over, 'New Game')
+        self.load_game_button = ButtonMenu(500, 300, 200, 100, self.load_game, 'Game Load')
+        self.exit_button = ButtonMenu(500, 500, 200, 100, self.exit, 'Exit')
         self.buttons = [self.new_game_button, self.load_game_button, self.exit_button]
 
     def handle_events(self):
@@ -68,12 +68,12 @@ class Menu:
         try:
             with open("save") as save_file:
                 self.save = save_file.read()
-                if int(self.save) == 0 or self.save == None:
+                if int(self.save) == 0 or self.save is None:
                     print('There is no any save files')
                     self.buttons.clear()
-                    self.new_game_button = Button(500, 100, 200, 100, self.menu_over, 'New Game')
-                    self.load_game_button = Button(500, 300, 200, 100, self.load_game, 'Game Load')
-                    self.exit_button = Button(500, 500, 200, 100, self.exit, 'Exit')
+                    self.new_game_button = ButtonMenu(500, 100, 200, 100, self.menu_over, 'New Game')
+                    self.load_game_button = ButtonMenu(500, 300, 200, 100, self.load_game, 'Game Load')
+                    self.exit_button = ButtonMenu(500, 500, 200, 100, self.exit, 'Exit')
                     self.buttons = [self.new_game_button, self.load_game_button, self.exit_button]
                     self.message = 'There is no any save files'
                 else:
@@ -94,24 +94,43 @@ class Menu:
             self.clock.tick(FPS)
 
 
-class State:
-    def __init__(self, flag, text, choices, characters, background_image,text_but1,text_but2):
-        self.flag = flag
+class Flags:
+    def __init__(self):
+        self.a = 2
+
+
+class Option:
+    def __init__(self, text, flag, st1, st2):
         self.text = text
-        self.text_but1=text_but1
-        self.text_but2=text_but2
-        self.choices = choices  # simple array of textes
+        if flag:
+            self.next_state = st1
+        else:
+            self.next_state = st2
+
+
+class State:
+    def __init__(self, text, characters, background_image, options):
+        self.text = text
         self.characters = characters  # dict of characters and their pos [(char1, pos1), (char2, pos2) ...]
         self.background_image = background_image
+        self.options = options
+        # self.flags = flags
 
     def handle_mouse_event(self, type, pos):
         pass
 
 
+class Final_State:
+    def __init__(self, text, characters, background_image):
+        self.text = text
+        self.characters = characters  # dict of characters and their pos [(char1, pos1), (char2, pos2) ...]
+        self.background_image = background_image
+
+
 class Game:
     def __init__(self, initial_state):
-        # self.initial_state = initial_state
         self.button = None
+        self.buttons = []
         self.current_state = initial_state
         self.frame_rate = FPS
         pygame.mixer.pre_init(44100, 16, 2, 4096)
@@ -132,28 +151,24 @@ class Game:
                                 pygame.MOUSEBUTTONUP,
                                 pygame.MOUSEMOTION):
                 self.current_state.handle_mouse_event(event.type, event.pos)
-                self.button_turn1.handle_mouse_event(event.type, event.pos)
-                self.button_turn2.handle_mouse_event(event.type, event.pos)
-
-
-    def turn_state1(self):
-        self.current_state = self.current_state.choices[0]
-        self.current_state.flag = 1
-
-    def turn_state2(self):
-        self.current_state = self.current_state.choices[1]
+                for i in self.buttons:
+                    i.handle_mouse_event(event.type, event.pos)
+                # self.button_turn1.handle_mouse_event(event.type, event.pos)
+            # self.button_turn2.handle_mouse_event(event.type, event.pos)
 
     def enter_main_state(self):
         pass
 
-    def check(self):
-        print('Кнопка нажалась')
+    def turn_state(self, i):
+        self.current_state = self.current_state.options[i].next_state
 
     def run(self):
         menu = Menu(self.clock, self.background_menu_image, self.surface)
         menu.run()
-        self.button_turn1 = Button(1150, 650, 50, 50, self.turn_state1, self.current_state.text_but1)
-        self.button_turn2 = Button(1150, 450, 50, 50, self.turn_state2, self.current_state.text_but2)
+        for i in range(len(self.current_state.options)):
+            self.buttons.append(
+                Button(1150, 400 - i * 100, 50, 50, self.turn_state, self.current_state.options[i].text, i))
+
         textbox_text = self.current_state.text
         textbox_image = pygame.image.load("textbox.png")
         textbox_font = pygame.font.SysFont('Arial', 25)
@@ -163,10 +178,12 @@ class Game:
             for img, pos in self.current_state.characters:  # characters
                 self.surface.blit(img, pos)
             # there should be characters
+
             self.surface.blit(textbox_image, (60, 600))  # textbox
             blit_text(self.surface, 1100, 300, textbox_text, (70, 620), textbox_font)
-            self.button_turn1.draw(self.surface)  # button
-            self.button_turn2.draw(self.surface)  # button
+
+            for i in self.buttons:
+                i.draw(self.surface)
 
             self.handle_events()  # for buttons and exit to work
             pygame.display.update()
@@ -174,7 +191,45 @@ class Game:
 
 
 class Button():
-    def __init__(self, x, y, w, h, on_click, text=''):
+    def __init__(self, x, y, w, h, on_click, text, k):
+        self.w, self.h = w, h
+        self.x, self.y = x, y
+        self.rect = pygame.Rect(self.x, self.y, self.w, self.h)
+        self.on_click = on_click
+        self.i = k
+        self.text = text
+        self.state = 'normal'  # or pressed
+        if self.text != '':
+            self.font = pygame.font.SysFont('Arial', 20)
+
+    def draw(self, surface):
+        pygame.draw.rect(surface, self.back_color, self.rect)
+        if self.text != '':
+            blit_text(surface, self.w, self.h, self.text, (self.x + self.w / 3, self.y), self.font)
+
+    def handle_mouse_event(self, type, pos):
+        if type == pygame.MOUSEBUTTONDOWN:
+            self.handle_mouse_down(pos)
+        elif type == pygame.MOUSEBUTTONUP:
+            self.handle_mouse_up(pos)
+
+    def handle_mouse_down(self, pos):
+        if self.rect.collidepoint(pos):
+            self.state = 'pressed'
+
+    def handle_mouse_up(self, pos):
+        if self.state == 'pressed':
+            self.on_click(self.i)
+            self.state = 'normal'
+
+    @property
+    def back_color(self):
+        return dict(normal=(200, 200, 200),
+                    pressed=(128, 128, 128))[self.state]
+
+
+class ButtonMenu():
+    def __init__(self, x, y, w, h, on_click, text):
         self.w, self.h = w, h
         self.x, self.y = x, y
         self.rect = pygame.Rect(self.x, self.y, self.w, self.h)
@@ -212,7 +267,7 @@ class Button():
 
 """Game start testing"""
 # initial_state = State(None)
-slide5 = State(None, 'Верно', [],
+"""slide5 = State(None, 'Верно', [],
                [(pygame.image.load("resources/slide_3/characters/character.png"), (0, 0))],
                pygame.transform.scale(pygame.image.load("resources/slide_3/background.jpg"), (WIDTH, HEIGHT)), 'rtr', 'ffe')
 
@@ -236,6 +291,25 @@ slide.append(slide1)
 slide.append(slide2)
 slide.append(slide3)
 slide.append(slide5)
-slide.append(slide5)
+slide.append(slide5)"""
+
+options3 = []
+slide4 = State('3', [(pygame.image.load("resources/slide_2/characters/character.png"), (0, 0))],
+               pygame.transform.scale(pygame.image.load("resources/slide_1/background.jpg"), (WIDTH, HEIGHT)), options3)
+slide3 = State('3', [(pygame.image.load("resources/slide_3/characters/character.png"), (0, 0))],
+               pygame.transform.scale(pygame.image.load("resources/slide_3/background.jpg"), (WIDTH, HEIGHT)), options3)
+option21 = Option('да', 1, slide3, slide4)
+option22 = Option('нет', 1, slide4, slide3)
+options2 = [option21, option22]
+slide2 = State('2', [(pygame.image.load("resources/slide_2/characters/character.png"), (0, 0))],
+               pygame.transform.scale(pygame.image.load("resources/slide_2/background.jpg"), (WIDTH, HEIGHT)), options2)
+
+option11 = Option('да', 1, slide2, slide3)
+option12 = Option('нет', 1, slide3, slide2)
+options1 = [option11, option12]
+slide1 = State('1', [(pygame.image.load("resources/slide_1/characters/character.png"), (0, 0))],
+               pygame.transform.scale(pygame.image.load("resources/slide_1/background.jpg"), (WIDTH, HEIGHT)), options1)
+slide = [slide1, slide2, slide3]
+
 game = Game(slide[0])
 game.run()
