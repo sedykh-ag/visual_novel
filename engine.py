@@ -130,11 +130,16 @@ class Game:
                                 pygame.MOUSEBUTTONUP,
                                 pygame.MOUSEMOTION):
                 self.current_state.handle_mouse_event(event.type, event.pos)
-                self.button_turn.handle_mouse_event(event.type, event.pos)
+                self.button_turn1.handle_mouse_event(event.type, event.pos)
+                self.button_turn2.handle_mouse_event(event.type, event.pos)
 
 
-    def turn_state(self):
-        self.current_state = self.current_state.next_state
+    def turn_state1(self, state):
+        self.current_state = state.choices[0]
+
+    def turn_state2(self, state):
+        self.current_state = state.choices[1]
+
 
     def enter_main_state(self):
         pass
@@ -145,7 +150,8 @@ class Game:
     def run(self):
         menu = Menu(self.clock, self.background_menu_image, self.surface)
         menu.run()
-        self.button_turn = Button(1150, 650, 50, 50, self.turn_state, '->')
+        self.button_turn1 = Button(1150, 650, 50, 50, self.turn_state1(self.current_state), 'Да')
+        self.button_turn2 = Button(1150, 450, 50, 50, self.turn_state2(self.current_state), 'Нет')
         textbox_text = self.current_state.text
         textbox_image = pygame.image.load("textbox.png")
         textbox_font = pygame.font.SysFont('Arial', 25)
@@ -157,7 +163,9 @@ class Game:
             # there should be characters
             self.surface.blit(textbox_image, (60, 600))  # textbox
             blit_text(self.surface, 1100, 300, textbox_text, (70, 620), textbox_font)
-            self.button_turn.draw(self.surface)  # button
+            self.button_turn1.draw(self.surface)  # button
+            self.button_turn2.draw(self.surface)  # button
+
             self.handle_events()  # for buttons and exit to work
             pygame.display.update()
             self.clock.tick(self.frame_rate)
@@ -202,14 +210,22 @@ class Button():
 
 """Game start testing"""
 # initial_state = State(None)
-slide2 = State(None, 'А я меня Кожева-тян.', [],
-               [(pygame.image.load("resources/slide_2/characters/character.png"), (0, 0))],
-               pygame.transform.scale(pygame.image.load("resources/slide_2/background.jpg"), (WIDTH, HEIGHT)))
-slide1 = State(slide2, 'Меня зовут Карась-тян. Очевидно', [],
+slide4 = State(None, 'А тебе пересда)))', [],
                [(pygame.image.load("resources/slide_3/characters/character.png"), (0, 0))],
                pygame.transform.scale(pygame.image.load("resources/slide_3/background.jpg"), (WIDTH, HEIGHT)))
+
+slide3 = State(None, 'А тебе пересда)))', [slide4,slide4],
+               [(pygame.image.load("resources/slide_3/characters/character.png"), (0, 0))],
+               pygame.transform.scale(pygame.image.load("resources/slide_3/background.jpg"), (WIDTH, HEIGHT)))
+slide2 = State(slide3, 'А я меня Кожева-тян.', [slide3,slide3],
+               [(pygame.image.load("resources/slide_2/characters/character.png"), (0, 0))],
+               pygame.transform.scale(pygame.image.load("resources/slide_2/background.jpg"), (WIDTH, HEIGHT)))
+slide1 = State(slide2, 'Меня зовут Карась-тян. Очевидно', [slide2, slide3],
+               [(pygame.image.load("resources/slide_3/characters/character.png"), (0, 0))],
+               pygame.transform.scale(pygame.image.load("resources/slide_1/background.jpg"), (WIDTH, HEIGHT)))
 slide = []
 slide.append(slide1)
 slide.append(slide2)
+slide.append(slide3)
 game = Game(slide[0])
 game.run()
