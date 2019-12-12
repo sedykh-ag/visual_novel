@@ -109,6 +109,7 @@ class State:
 class Game:
     def __init__(self, initial_state):
         # self.initial_state = initial_state
+        self.button = None
         self.current_state = initial_state
         self.frame_rate = FPS
         pygame.mixer.pre_init(44100, 16, 2, 4096)
@@ -129,6 +130,8 @@ class Game:
                                 pygame.MOUSEBUTTONUP,
                                 pygame.MOUSEMOTION):
                 self.current_state.handle_mouse_event(event.type, event.pos)
+                self.button_turn.handle_mouse_event(event.type, event.pos)
+
 
     def turn_state(self):
         self.current_state = self.current_state.next_state
@@ -142,7 +145,7 @@ class Game:
     def run(self):
         menu = Menu(self.clock, self.background_menu_image, self.surface)
         menu.run()
-        button_turn = Button(1150, 650, 50, 50, self.check, '->')
+        self.button_turn = Button(1150, 650, 50, 50, self.turn_state, '->')
         textbox_text = self.current_state.text
         textbox_image = pygame.image.load("textbox.png")
         textbox_font = pygame.font.SysFont('Arial', 25)
@@ -154,7 +157,7 @@ class Game:
             # there should be characters
             self.surface.blit(textbox_image, (60, 600))  # textbox
             blit_text(self.surface, 1100, 300, textbox_text, (70, 620), textbox_font)
-            button_turn.draw(self.surface)  # button
+            self.button_turn.draw(self.surface)  # button
             self.handle_events()  # for buttons and exit to work
             pygame.display.update()
             self.clock.tick(self.frame_rate)
@@ -189,7 +192,7 @@ class Button():
     def handle_mouse_up(self, pos):
         if self.state == 'pressed':
             self.on_click()
-            self.state = 'hover'
+            self.state = 'normal'
 
     @property
     def back_color(self):
