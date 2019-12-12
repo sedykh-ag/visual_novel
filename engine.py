@@ -1,4 +1,3 @@
-import math
 import os
 import sys
 import tempfile
@@ -40,9 +39,11 @@ class Menu:
 		self.clock = clock
 		self.background_image = background_image
 		self.over = False
-		self.new_game_button = Button(500, 300, 100, 50, self.menu_over, 'New Game')
-		self.exit_button = Button(500, 500, 100, 50, self.exit, 'Exit')
-		self.buttons = [self.new_game_button, self.exit_button]
+		self.message = None
+		self.new_game_button = Button(500, 100, 200, 100, self.menu_over, 'New Game')
+		self.load_game_button = Button(500, 300, 200, 100, self.load_game, 'Game Load')
+		self.exit_button = Button(500, 500, 200, 100, self.exit, 'Exit')
+		self.buttons = [self.new_game_button, self.load_game_button, self.exit_button]
 
 	def handle_events(self):
 		for event in pygame.event.get():
@@ -62,12 +63,31 @@ class Menu:
 	def menu_over(self):
 		self.over = True
 
+	def load_game(self):
+		try:
+			with open("save") as save_file:
+				self.save = save_file.read()
+				if int(self.save) == 0 or self.save == None:
+					print('There is no any save files')
+					self.buttons.clear()
+					self.new_game_button = Button(500, 100, 200, 100, self.menu_over, 'New Game')
+					self.load_game_button = Button(500, 300, 200, 100, self.load_game, 'Game Load')
+					self.exit_button = Button(500, 500, 200, 100, self.exit, 'Exit')
+					self.buttons = [self.new_game_button, self.load_game_button, self.exit_button]
+					self.message = 'There is no any save files'
+				else:
+					game.current_state = slide[int(self.save) - 1]
+					self.over = True
+		except IOError:
+			print("An IOError has occurred!")
+
 	def run(self):
 		while not self.over:
 			self.surface.blit(self.background_image, (0, 0))
 			for b in self.buttons:
 				b.draw(self.surface)
-
+			if self.message:
+				blit_text(self.surface, 500, 50, self.message, (10, 10), pygame.font.SysFont('Arial', 30))
 			self.handle_events()
 			pygame.display.update()
 			self.clock.tick(FPS)
@@ -94,7 +114,7 @@ class Game:
 		self.surface = pygame.display.set_mode((WIDTH, HEIGHT))
 		pygame.display.set_caption("Game")
 		self.clock = pygame.time.Clock()
-		self.background_menu_image = pygame.image.load("blank.png")
+		self.background_menu_image = pygame.transform.scale(pygame.image.load("resources/menu/background.png"), (WIDTH, HEIGHT))
 
 	def handle_events(self):
 		for event in pygame.event.get():
@@ -119,7 +139,7 @@ class Game:
 		button_turn = Button(1150, 650, 50, 50, self.turn_state)
 		textbox_text = self.current_state.text
 		textbox_image = pygame.image.load("textbox.png")
-		textbox_font = pygame.font.SysFont('Arial', 20)
+		textbox_font = pygame.font.SysFont('Arial', 25)
 		textbox_surface = textbox_font.render(textbox_text, False, BLACK)
 		while True:
 			self.surface.blit(self.current_state.background_image, (0, 0)) # background
@@ -136,19 +156,19 @@ class Game:
 
 class Button():
 	def __init__(self, x, y, w, h, on_click, text=''):
-		self.x, self.y = x, y
 		self.w, self.h = w, h
-		self.rect = pygame.Rect(x, y, w, h)
+		self.x, self.y = x, y
+		self.rect = pygame.Rect(self.x, self.y, self.w, self.h)
 		self.on_click = on_click
 		self.text = text
 		self.state = 'normal' # or pressed
 		if self.text != '':
-			self.font = pygame.font.SysFont('Arial', 10)
+			self.font = pygame.font.SysFont('Arial', 20)
 
 	def draw(self, surface):
 		pygame.draw.rect(surface, self.back_color, self.rect)
 		if self.text != '':
-			blit_text(surface, self.w, self.h, self.text, (self.x, self.y), self.font)
+			blit_text(surface, self.w, self.h, self.text, (self.x + self.w / 3, self.y), self.font)
 
 	def handle_mouse_event(self, type, pos):
 		if type == pygame.MOUSEBUTTONDOWN:
@@ -173,7 +193,10 @@ class Button():
 
 """Game start testing"""
 #initial_state = State(None)
-slide2 = State(None, '', [], [pygame.image.load("Lena.png"), (100, 100)], pygame.image.load("blank.png"))
-slide1 = State(None, '', [], [(pygame.image.load("Miku.png"), (0, 0)), (pygame.image.load("Ulyana.png"), (100, 100))], pygame.image.load("blank.png"))
+slide2 = State(None, '', [], [(pygame.image.load("resources/slide_2/characters/character.png"), (0, 0))], pygame.transform.scale(pygame.image.load("resources/slide_2/background.jpg"), (WIDTH, HEIGHT)))
+slide1 = State(None, '', [], [(pygame.image.load("resources/slide_3/characters/character.png"), (0, 0))], pygame.transform.scale(pygame.image.load("resources/slide_3/background.jpg"), (WIDTH, HEIGHT)))
+slide = []
+slide.append(slide1)
+slide.append(slide2)
 game = Game(slide1)
 game.run()
