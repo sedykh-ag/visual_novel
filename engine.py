@@ -34,6 +34,13 @@ def blit_text(surface, max_width, max_height, text, pos, font, color=pygame.Colo
         y += word_height  # Start on new row.
 
 
+def ex(a):  # распаковка даны из архива
+    temp_dir = tempfile.mkdtemp()  # временная директория
+    archive.extract(a, path=temp_dir)
+    a = str.format('{}/' + a, temp_dir)
+    return a
+
+
 class Menu:
     def __init__(self, clock, background_image, surface):
         self.surface = surface
@@ -94,18 +101,26 @@ class Menu:
             self.clock.tick(FPS)
 
 
-class Flags:
-    def __init__(self):
-        self.a = 2
+class Flag:
+    def __init__(self, n):
+        self.items = [0] * n
 
 
-class Option:
-    def __init__(self, text, flag, st1, st2):
-        self.text = text
-        if flag:
-            self.next_state = st1
+class Option:  # логическая составляющая кнопки
+    def __init__(self, text, g, st1, st2, flag_use, flag_make):
+        self.g = g  # эксземпляр класса Game, откуда импортируруется массив флагов
+        self.st1 = st1  # след слайд, если есть флаг
+        self.st2 = st2  # след слайд, если нет флага
+        self.flag_use = flag_use  # флаг, который надо использовать
+        self.flag_make = flag_make  # флаг, который надо поставить
+        self.text = text  # текст кнопки
+
+    def next_st(self):  # ОЧЕНЬ ВАЖНЫЙ момент, эта функция меняет массив флагов
+        if self.g.flags.items[self.flag_use]:
+            self.next_state = self.st1
+            self.g.flags.items[self.flag_make] = 1
         else:
-            self.next_state = st2
+            self.next_state = self.st2
 
 
 class State:
@@ -113,14 +128,13 @@ class State:
         self.text = text
         self.characters = characters  # dict of characters and their pos [(char1, pos1), (char2, pos2) ...]
         self.background_image = background_image
-        self.options = options
-        # self.flags = flags
+        self.options = options  # логическая составляющая кнопок в окне
 
     def handle_mouse_event(self, type, pos):
         pass
 
 
-class Final_State:
+class Final:  # неактивен, тк не доделан
     def __init__(self, text, characters, background_image):
         self.text = text
         self.characters = characters  # dict of characters and their pos [(char1, pos1), (char2, pos2) ...]
@@ -128,11 +142,11 @@ class Final_State:
 
 
 class Game:
-    def __init__(self, initial_state):
+    def __init__(self, f):
         self.button = None
         self.buttons = []
-        self.current_state = initial_state
         self.frame_rate = FPS
+        self.flags = f  # массив флагов
         pygame.mixer.pre_init(44100, 16, 2, 4096)
         pygame.init()
         pygame.font.init()
@@ -141,6 +155,9 @@ class Game:
         self.clock = pygame.time.Clock()
         self.background_menu_image = pygame.transform.scale(pygame.image.load("resources/menu/background.png"),
                                                             (WIDTH, HEIGHT))
+
+    def initialization(self, initial_state):  # костыль, необходимый для того, чтобы создать Game вначале без слайдов
+        self.current_state = initial_state
 
     def handle_events(self):
         for event in pygame.event.get():
@@ -160,6 +177,8 @@ class Game:
         pass
 
     def turn_state(self, i):
+        self.current_state.options[i].next_st()  # ОЧЕНЬ ВАЖНЫЙ момент, функция, используя измененный массив флагов,
+        # выдает след слайд
         self.current_state = self.current_state.options[i].next_state
 
     def run(self):
@@ -190,7 +209,7 @@ class Game:
             self.clock.tick(self.frame_rate)
 
 
-class Button():
+class Button:
     def __init__(self, x, y, w, h, on_click, text, k):
         self.w, self.h = w, h
         self.x, self.y = x, y
@@ -228,7 +247,7 @@ class Button():
                     pressed=(128, 128, 128))[self.state]
 
 
-class ButtonMenu():
+class ButtonMenu:
     def __init__(self, x, y, w, h, on_click, text):
         self.w, self.h = w, h
         self.x, self.y = x, y
@@ -265,51 +284,28 @@ class ButtonMenu():
                     pressed=(128, 128, 128))[self.state]
 
 
-"""Game start testing"""
-# initial_state = State(None)
-"""slide5 = State(None, 'Верно', [],
-               [(pygame.image.load("resources/slide_3/characters/character.png"), (0, 0))],
-               pygame.transform.scale(pygame.image.load("resources/slide_3/background.jpg"), (WIDTH, HEIGHT)), 'rtr', 'ffe')
+"""определяем имя архива"""
+archive = zipfile.ZipFile('resources.zip', 'r')  # создает объект архива
+"""создаем массив флагов и заполняем его"""
+flags = Flag(3)
+flags.items[0] = 1
 
-slide4 = State(None, 'Верно', [slide5, slide5],
-               [(pygame.image.load("resources/slide_3/characters/character.png"), (0, 0))],
-               pygame.transform.scale(pygame.image.load("resources/slide_3/background.jpg"), (WIDTH, HEIGHT)), 'rtr', 'ffe')
-
-slide3 = State(None, 'Неверно', [slide4,slide4],
-               [(pygame.image.load("resources/slide_3/characters/character.png"), (0, 0))],
-               pygame.transform.scale(pygame.image.load("resources/slide_3/background.jpg"), (WIDTH, HEIGHT)), 'rtr', 'ffe')
-
-slide2 = State(slide3, 'Тебя зовут Да?', [slide3,slide4],
-               [(pygame.image.load("resources/slide_2/characters/character.png"), (0, 0))],
-               pygame.transform.scale(pygame.image.load("resources/slide_2/background.jpg"), (WIDTH, HEIGHT)), 'rtr', 'ffe')
-
-slide1 = State(slide2, 'Как тебя зовут?', [slide2],
-               [(pygame.image.load("resources/slide_3/characters/character.png"), (0, 0))],
-               pygame.transform.scale(pygame.image.load("resources/slide_1/background.jpg"), (WIDTH, HEIGHT)), 'rtr', 'ffe')
-slide = []
-slide.append(slide1)
-slide.append(slide2)
-slide.append(slide3)
-slide.append(slide5)
-slide.append(slide5)"""
+game = Game(flags)
 
 options3 = []
-slide4 = State('3', [(pygame.image.load("resources/slide_2/characters/character.png"), (0, 0))],
-               pygame.transform.scale(pygame.image.load("resources/slide_1/background.jpg"), (WIDTH, HEIGHT)), options3)
-slide3 = State('3', [(pygame.image.load("resources/slide_3/characters/character.png"), (0, 0))],
-               pygame.transform.scale(pygame.image.load("resources/slide_3/background.jpg"), (WIDTH, HEIGHT)), options3)
-option21 = Option('да', 1, slide3, slide4)
-option22 = Option('нет', 1, slide4, slide3)
-options2 = [option21, option22]
-slide2 = State('2', [(pygame.image.load("resources/slide_2/characters/character.png"), (0, 0))],
-               pygame.transform.scale(pygame.image.load("resources/slide_2/background.jpg"), (WIDTH, HEIGHT)), options2)
+slide4 = State('3', [(pygame.image.load(ex("slide_2/characters/character.png")), (0, 0))],
+               pygame.transform.scale(pygame.image.load(ex("slide_1/background.jpg")), (WIDTH, HEIGHT)), options3)
+slide3 = State('3', [(pygame.image.load(ex("slide_3/characters/character.png")), (0, 0))],
+               pygame.transform.scale(pygame.image.load(ex("slide_3/background.jpg")), (WIDTH, HEIGHT)), options3)
 
-option11 = Option('да', 1, slide2, slide3)
-option12 = Option('нет', 1, slide3, slide2)
-options1 = [option11, option12]
-slide1 = State('1', [(pygame.image.load("resources/slide_1/characters/character.png"), (0, 0))],
-               pygame.transform.scale(pygame.image.load("resources/slide_1/background.jpg"), (WIDTH, HEIGHT)), options1)
+options2 = [Option('да', game, slide3, slide4, 1, 2), Option('нет', game, slide4, slide3, 1, 2)]
+slide2 = State('2', [(pygame.image.load(ex("slide_2/characters/character.png")), (0, 0))],
+               pygame.transform.scale(pygame.image.load(ex("slide_2/background.jpg")), (WIDTH, HEIGHT)), options2)
+
+options1 = [Option('да', game, slide2, slide3, 0, 1), Option('нет', game, slide2, slide2, 0, 0)]
+slide1 = State('1', [(pygame.image.load(ex("slide_1/characters/character.png")), (0, 0))],
+               pygame.transform.scale(pygame.image.load(ex("slide_1/background.jpg")), (WIDTH, HEIGHT)), options1)
 slide = [slide1, slide2, slide3]
 
-game = Game(slide[0])
+game.initialization(slide[0])
 game.run()
