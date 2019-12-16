@@ -89,20 +89,18 @@ class Menu:
         except IOError:
             print("An IOError has occurred!")'''
 
-
         f = open("Saves.txt", "r")
-        a = f.read()
+        a =  f.readline()
+        str = a.split()
         if a == '':
-            print('There is no any save files')
+            self.message = 'There is no ane save files'
         else:
-            str = f.readline().split()
             game.current_state_index = int(str[0])
             for i in range(game.flags.n):
-                game.flags.items[i] = int(str[i+1])
-            f.close()
-            game.current_state = game.slide[game.current_state_index]
+                game.flags.items[i] = int(str[i + 1])
+                game.current_state = game.slide[game.current_state_index]
             game.run()
-
+        f.close()
 
     def run(self):
         while not self.over:
@@ -123,11 +121,11 @@ class Flag:
 
 
 class Option:  # логическая составляющая кнопки
-    def __init__(self, text, g, st1, st2, flag_use, flag_make, slide):
+    def __init__(self, text, g, st1, st2, flag_use, flag_make, s):
         self.g = g  # эксземпляр класса Game, откуда импортируруется массив флагов
         self.st1 = st1  # индекс след слайда, если есть флаг
         self.st2 = st2  # индекс след слайда, если нет флага
-        self.slide = slide
+        self.slide = s  # массив слайдов
         self.flag_use = flag_use  # флаг, который надо использовать
         self.flag_make = flag_make  # флаг, который надо поставить
         self.text = text  # текст кнопки
@@ -174,7 +172,6 @@ def Save_Game(current_state_index, flags):
     f.write(a_str)
     b = [0] * flags.n
     for i in range(flags.n):
-        print(i)
         b[i] = flags.items[i]
         b_str = str(b[i])
         b_str+= ' '
@@ -257,6 +254,7 @@ class Game:
             self.handle_events()  # for buttons and exit to work
             pygame.display.update()
             self.clock.tick(self.frame_rate)
+
 
 class Button:
     def __init__(self, x, y, w, h, on_click, text, i):
