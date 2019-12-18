@@ -1,4 +1,5 @@
-import os
+# coding: utf8
+
 import re
 import sys
 import tempfile
