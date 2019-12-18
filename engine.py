@@ -1,3 +1,5 @@
+import os
+import re
 import sys
 import tempfile
 import zipfile
@@ -165,7 +167,7 @@ class Game:
         self.surface = pygame.display.set_mode((WIDTH, HEIGHT))
         pygame.display.set_caption("Game")
         self.clock = pygame.time.Clock()
-        self.background_menu_image = pygame.transform.scale(pygame.image.load("resources/menu/background.png"),
+        self.background_menu_image = pygame.transform.scale(pygame.image.load(ex("menu/background.jpg")),
                                                             (WIDTH, HEIGHT))
 
     def initialization(self, slide, i):  # allows you to create an instance of the Game class initially without slides
@@ -179,6 +181,16 @@ class Game:
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
+                try:
+                    self.save = open("save", "w").close
+                    try:
+                        self.save.write('2')
+                    except Exception as e:
+                        print(e)
+                    finally:
+                        self.save.close()
+                except Exception as ex:
+                    print(ex)
                 pygame.quit()
                 sys.exit()
             elif event.type in (pygame.MOUSEBUTTONDOWN,
@@ -223,17 +235,11 @@ class Game:
 
                 # buttons of current_state
                 for i in range(len(self.current_state.options)):
-                    self.buttons.append(
-                        Button(1150, 400 - i * 100, 60, 60, self.turn_state, self.current_state.options[i].text, i))
-                # Save button
-                self.buttons.append(
-                    ButtonSave(WIDTH//2 - 75, 10, 150, 80, Save_Game, 'Save Game', self.current_state_index, self.flags))
-                # Go to Menu button
-                self.buttons.append(ButtonMenu(WIDTH//2 - 75, 100, 150, 80, self.save_and_menu, 'Menu'))
-                # draw all buttons
+                    self.buttons.append(Button(1150, 500 - i * 100, 60, 60, self.turn_state, self.current_state.options[i].text, i))
+                    self.buttons.append(ButtonSave(WIDTH - 200, 150, 100, 70, Save_Game, 'Save Game', self.current_state_index, self.flags))# Save button
+                    self.buttons.append(ButtonMenu(WIDTH - 200, 50, 100, 70, self.save_and_menu, 'Menu')) # Go to Menu button
                 for i in self.buttons:
-                    i.draw((self.current_state.background_image))
-                # update and draw background
+                    i.draw(self.current_state.background_image) # update and draw background
                 self.surface.blit(self.current_state.background_image, (0, 0))
                 pygame.display.update()
             self.update = 0
@@ -264,7 +270,7 @@ class Button:
     def draw(self, surface):
         pygame.draw.rect(surface, self.back_color, (self.x, self.y, self.w, self.h))
         if self.text != '':
-            blit_text(surface, self.w, self.h, self.text, (self.x + self.w / 3, self.y), self.font)
+            blit_text(surface, self.w, self.h, self.text, (self.x, self.y), self.font)
 
     def handle_mouse_event(self, type, pos):
         if type == pygame.MOUSEBUTTONDOWN:
@@ -363,30 +369,47 @@ class ButtonSave:
                     pressed=(128, 128, 128))[self.state]
 
 
-archive = zipfile.ZipFile('resources.zip', 'r')  # archive object
+slide = [0] * 100  # array of all slides
+options = [0] * 100  # array of options for each slide
+
+"""определяем имя архива"""
+archive = zipfile.ZipFile('resources.zip', 'r')  # создает объект архива
+match_pattern = re.findall(r'slide_\d{1,}/\B', str(archive.namelist()))
+count_of_slides = len(match_pattern)
+print(count_of_slides)
+
+""" это заготовка для автоматического создания слайдов
+for i in range(1, count_of_slides + 1):
+    slide[i] = State((open(ex('slide_' + str(i) + '/text.txt'), 'r')).read(),
+                     [(pygame.image.load(ex('slide_' + str(i) + '/characters/character.png')), (0, 0))],
+                     pygame.transform.scale(pygame.image.load(ex('slide_' + str(i) + '/background.jpg')), (WIDTH, HEIGHT)),
+                     options[1])"""
+
+"""создаем массив флагов и заполняем его"""
 flags = Flag(3)  # flags object
 flags.items[0] = 1
 
 global_flags = Flag(2)  # array of global flags
 game = Game(flags)
-slide = [0] * 100  # array of all slides
-options = [0] * 100  # array of options for each slide
-
-slide[5] = State('Конец игры', [(pygame.image.load(ex("slide_5/characters/character.png")), (-100, -650))],
-                 pygame.transform.scale(pygame.image.load(ex("slide_5/background.jpg")), (WIDTH, HEIGHT)), [])
-options[3] = [Option('Skip', game, 5, 5, 1, 2)]
-
-slide[4] = State('Неверно.', [(pygame.image.load(ex("slide_4/characters/character.png")), (-100, -650))],
-                 pygame.transform.scale(pygame.image.load(ex("slide_4/background.jpg")), (WIDTH, HEIGHT)), options[3])
-slide[3] = State('Верно!', [(pygame.image.load(ex("slide_3/characters/character.png")), (0, 0))],
-                 pygame.transform.scale(pygame.image.load(ex("slide_3/background.jpg")), (WIDTH, HEIGHT)), options[3])
-
-options[2] = [Option('да', game, 3, 4, 1, 2), Option('нет', game, 4, 3, 1, 2)]
-slide[2] = State('Ты ответил Вася.', [(pygame.image.load(ex("slide_2/characters/character.png")), (0, 0))],
-                 pygame.transform.scale(pygame.image.load(ex("slide_2/background.jpg")), (WIDTH, HEIGHT)), options[2])
 
 options[1] = [Option('Вася', game, 2, 2, 0, 1), Option('Петя', game, 2, 2, 0, 0)]
-slide[1] = State('Привет, как тебя зовут?', [(pygame.image.load(ex("slide_1/characters/character.png")), (0, -200))],
+options[2] = [Option('да', game, 3, 4, 1, 2), Option('нет', game, 4, 3, 1, 2)]
+options[3] = [Option('Skip', game, 5, 5, 1, 2)]
+
+
+slide[5] = State((open(ex('slide_5/text.txt'), 'r')).read(), [(pygame.image.load(ex("slide_5/characters/character.png")), (0, 0))],
+                 pygame.transform.scale(pygame.image.load(ex("slide_5/background.jpg")), (WIDTH, HEIGHT)), [])
+
+slide[4] = State((open(ex('slide_4/text.txt'), 'r')).read(), [(pygame.image.load(ex("slide_4/characters/character.png")), (0, 0))],
+                 pygame.transform.scale(pygame.image.load(ex("slide_4/background.jpg")), (WIDTH, HEIGHT)), options[3])
+
+slide[3] = State((open(ex('slide_3/text.txt'), 'r')).read(), [(pygame.image.load(ex("slide_3/characters/character.png")), (0, 0))],
+                 pygame.transform.scale(pygame.image.load(ex("slide_3/background.jpg")), (WIDTH, HEIGHT)), options[3])
+
+slide[2] = State((open(ex('slide_2/text.txt'), 'r')).read(), [(pygame.image.load(ex("slide_2/characters/character.png")), (0, 0))],
+                 pygame.transform.scale(pygame.image.load(ex("slide_2/background.jpg")), (WIDTH, HEIGHT)), options[2])
+
+slide[1] = State((open(ex('slide_1/text.txt'), 'r')).read(), [(pygame.image.load(ex("slide_1/characters/character.png")), (0, 0))],
                  pygame.transform.scale(pygame.image.load(ex("slide_1/background.jpg")), (WIDTH, HEIGHT)), options[1])
 
 game.initialization(slide, 1)
