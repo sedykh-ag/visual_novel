@@ -111,17 +111,18 @@ class Option:  # the logical component of the button
     def next_st(self):
         if self.g.flags.items[self.flag_use]:
             self.next_state = self.g.slide[self.st1]
-            self.next_state_index = self.st1
-            self.g.flags.items[self.flag_make] = 1
         else:
             self.next_state = self.g.slide[self.st2]
-            self.next_state_index = self.st2
 
     def update_index(self):
         if self.g.flags.items[self.flag_use]:
             self.next_state_index = self.st1
         else:
             self.next_state_index = self.st2
+
+    def update_flags(self):
+        if self.g.flags.items[self.flag_use]:
+            self.g.flags.items[self.flag_make] = 1
 
 
 class State:
@@ -155,7 +156,9 @@ class Game:
         self.buttons = []  # array of buttons
         self.frame_rate = FPS
         self.flags = f  # array of flags
-        self.first_flags = f # initial array of flags
+        self.first_flags = [0] * f.n # initial array of flags
+        for i in range(f.n):
+            self.first_flags[i] = f.items[i]
         self.update = 1  # a parameter that shows whether something on the screen has changed or not
         #pygame.mixer.pre_init(44100, 16, 2, 4096)
         pygame.init()
@@ -201,14 +204,10 @@ class Game:
         self.current_state.options[i].update_index()  # update and replaces index
         self.current_state_index = self.current_state.options[i].next_state_index
 
+        self.current_state.options[i].update_flags()
+
         self.current_state.options[i].next_st()  # update and replaces state
         self.current_state = self.current_state.options[i].next_state
-        for i in range(3):
-            print(self.flags.items[i])
-        print(2222)
-        for i in range(3):
-            print(self.first_flags.items[i])
-        print(3333)
 
     def run_menu(self):  # launches the menu
         menu = Menu(self)
@@ -253,10 +252,11 @@ class Game:
             self.clock.tick(self.frame_rate)
 
     def save_and_menu(self):  # this function leads to the menu and makes autosave
-        Save_Game(self.current_state_index, self.flags)  # save
+        #Save_Game(self.current_state_index, self.flags)  # save
         # the game must have the initial characteristics for the correct launch of a new game
         self.current_state_index = self.first_current_state_index
-        self.flags = self.first_flags
+        for i in range(self.flags.n):
+            self.flags.items[i] = self.first_flags[i]
         self.current_state = self.first_current_state
         self.update = 1
         self.run_menu()
