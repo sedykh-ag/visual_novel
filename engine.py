@@ -1,5 +1,3 @@
-# coding: utf8
-
 import re
 import sys
 import tempfile
@@ -26,9 +24,6 @@ def blit_text(surface, max_width, max_height, text, pos, font, color=pygame.Colo
         for word in line:
             word_surface = font.render(word, 0, color)
             word_width, word_height = word_surface.get_size()
-            if x + word_width >= max_width:
-                x = pos[0]  # Reset the x.
-                y += word_height  # Start on new row.
             surface.blit(word_surface, (x, y))
             x += word_width + space
         x = pos[0]  # Reset the x.
@@ -113,7 +108,7 @@ class Option:  # the logical component of the button
         self.flag_make = flag_make  # flag to use
         self.text = text  # text of button
 
-    def next_st(self):  # ОЧЕНЬ ВАЖНЫЙ момент, эта функция меняет массив флагов
+    def next_st(self):
         if self.g.flags.items[self.flag_use]:
             self.next_state = self.g.slide[self.st1]
             self.next_state_index = self.st1
@@ -160,7 +155,7 @@ class Game:
         self.buttons = []  # array of buttons
         self.frame_rate = FPS
         self.flags = f  # array of flags
-        self.first_flags = f  # initial array of flags
+        self.first_flags = f # initial array of flags
         self.update = 1  # a parameter that shows whether something on the screen has changed or not
         #pygame.mixer.pre_init(44100, 16, 2, 4096)
         pygame.init()
@@ -182,7 +177,7 @@ class Game:
     def handle_events(self):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
-                try:
+                '''try:
                     self.save = open("save", "w").close
                     try:
                         self.save.write('2')
@@ -191,7 +186,7 @@ class Game:
                     finally:
                         self.save.close()
                 except Exception as ex:
-                    print(ex)
+                    print(ex)'''
                 pygame.quit()
                 sys.exit()
             elif event.type in (pygame.MOUSEBUTTONDOWN,
@@ -208,6 +203,12 @@ class Game:
 
         self.current_state.options[i].next_st()  # update and replaces state
         self.current_state = self.current_state.options[i].next_state
+        for i in range(3):
+            print(self.flags.items[i])
+        print(2222)
+        for i in range(3):
+            print(self.first_flags.items[i])
+        print(3333)
 
     def run_menu(self):  # launches the menu
         menu = Menu(self)
@@ -239,10 +240,10 @@ class Game:
                     self.buttons.append(
                         Button(WIDTH - 230, 470 - i * 100, 200, 70, self.turn_state,
                                self.current_state.options[i].text, i))
-                    self.buttons.append(
+                self.buttons.append(
                         ButtonSave(WIDTH - 200, 150, 100, 70, Save_Game, 'Save Game', self.current_state_index,
                                    self.flags))  # Save button
-                    self.buttons.append(
+                self.buttons.append(
                         ButtonMenu(WIDTH - 200, 50, 100, 70, self.save_and_menu, 'Menu'))  # Go to Menu button
                 for i in self.buttons:
                     i.draw(self.current_state.background_image)  # update and draw background
@@ -276,7 +277,7 @@ class Button:
     def draw(self, surface):
         pygame.draw.rect(surface, self.back_color, (self.x, self.y, self.w, self.h))
         if self.text != '':
-            blit_text(surface, self.w, self.h, self.text, (self.x + 10, self.y), self.font)
+            blit_text(surface, self.w, self.h, self.text, (self.x + 10, self.y + 20), self.font)
 
     def handle_mouse_event(self, type, pos):
         if type == pygame.MOUSEBUTTONDOWN:
@@ -313,7 +314,7 @@ class ButtonMenu:
     def draw(self, surface):
         pygame.draw.rect(surface, self.back_color, self.rect)
         if self.text != '':
-            blit_text(surface, self.w, self.h, self.text, (self.x + self.w / 4, self.y), self.font)
+            blit_text(surface, self.w, self.h, self.text, (self.x + self.w//4, self.y + self.h//3), self.font)
 
     def handle_mouse_event(self, type, pos):
         if type == pygame.MOUSEBUTTONDOWN:
@@ -352,7 +353,7 @@ class ButtonSave:
     def draw(self, surface):
         pygame.draw.rect(surface, self.back_color, self.rect)
         if self.text != '':
-            blit_text(surface, self.w, self.h, self.text, (self.x + self.w / 4, self.y - 10), self.font)
+            blit_text(surface, self.w, self.h, self.text, (self.x + 5, self.y + 20), self.font)
 
     def handle_mouse_event(self, type, pos):
         if type == pygame.MOUSEBUTTONDOWN:
@@ -382,26 +383,34 @@ options = [0] * 100  # array of options for each slide
 
 """определяем имя архива"""
 archive = zipfile.ZipFile('resources.zip', 'r')  # создает объект архива
-match_pattern = re.findall(r'slide_\d{1,}/\B', str(archive.namelist()))
+match_pattern = re.findall(r'slide_\d+/\B', str(archive.namelist()))
 count_of_slides = len(match_pattern)
-print(count_of_slides)
+# print(count_of_slides)
 
 
 """создаем массив флагов и заполняем его"""
 flags = Flag(3)  # flags object
 flags.items[0] = 1
 
-global_flags = Flag(2)  # array of global flags
+#  global_flags = Flag(2)  # array of global flags
 game = Game(flags)
 
 for i in range(1, count_of_slides + 1):
-    options1 = (open(ex('slide_' + str(i) + '/options.txt'))).readlines()
-    sad_duck = []
-    for k in options1:
+    read_options = (open(ex('slide_' + str(i) + '/options.txt'))).readlines()
+    one_state_options = []
+    for k in read_options:
         one_option = k.split()
-        sad_duck.append(Option(str(one_option[0]), game, int(one_option[1]), int(one_option[2]), int(one_option[3]), int(one_option[4])))
-    print(len(sad_duck))
-    options[i] = sad_duck
+        a = int(one_option[len(one_option) - 1])
+        b = int(one_option[len(one_option) - 2])
+        c = int(one_option[len(one_option) - 3])
+        d = int(one_option[len(one_option) - 4])
+        f = ''
+        for j in range(len(one_option) - 4):
+            f += str(one_option[j])
+            f += ' '
+        one_state_options.append(Option(f, game, d, c, b, a))
+    # print(len(one_state_options))
+    options[i] = one_state_options
     slide[i] = State((open(ex('slide_' + str(i) + '/text.txt'), 'r')).read(),
                      [(pygame.image.load(ex('slide_' + str(i) + '/characters/character.png')), (0, 0))],
                      pygame.transform.scale(pygame.image.load(ex('slide_' + str(i) + '/background.jpg')), (WIDTH, HEIGHT)),

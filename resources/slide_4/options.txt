@@ -1,1 +1,1 @@
-Unerstand 5 5 1 2
+Understand 5 5 0 0
